@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  firebaseUid  String     @unique @map("firebase_uid")
+  email        String     @unique
+  name         String     @default("Guest")
+  picture      String?    
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  
+  documents    Document[]
+
+  @@map("users")
+}
+
+model Document {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  title       String   @default("Untitled Document")
+  content     String   // SQLite doesn't support @db.Text
+  tags        String   @default("[]") // Store as JSON string
+  status      String   @default("draft") // draft, archived
+  isFavorite  Boolean  @default(false) @map("is_favorite")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("documents")
+}
