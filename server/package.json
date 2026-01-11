@@ -7,9 +7,13 @@
   "scripts": {
     "dev": "nodemon --max-old-space-size=2048 server.js",
     "start": "node --max-old-space-size=2048 server.js",
+    "build": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [
     "markdown",
