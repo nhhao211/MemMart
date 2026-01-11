@@ -7,23 +7,49 @@ import prisma from "../config/db.js";
 export async function login(req, res) {
   try {
     const { uid, email, name, picture } = req.user;
+    console.log(`[Auth] Login request for UID: ${uid}, Email: ${email}`);
 
     // Check if user exists in database
+    console.log("[Auth] Checking if user exists in DB...");
     let user = await prisma.user.findUnique({
       where: { firebaseUid: uid },
     });
 
     // If not, create new user
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          firebaseUid: uid,
-          email,
-          name: name || "Guest",
-          picture: picture || null,
-        },
+      console.log("[Auth] User not found, creating new user...");
+      // Check if email already exists (edge case)
+      const existingEmail = await prisma.user.findUnique({
+        where: { email: email },
       });
+
+      if (existingEmail) {
+        console.warn(
+          `[Auth] Warning: Email ${email} exists but UID differs. Linking...`
+        );
+        // In a real app, you might want to merge or handle this.
+        // For now, we'll try to update the existing user with the new UID
+        user = await prisma.user.update({
+          where: { email: email },
+          data: {
+            firebaseUid: uid,
+            name: name || existingEmail.name,
+            picture: picture || existingEmail.picture,
+          },
+        });
+      } else {
+        user = await prisma.user.create({
+          data: {
+            firebaseUid: uid,
+            email,
+            name: name || "Guest",
+            picture: picture || null,
+          },
+        });
+      }
+      console.log(`[Auth] User created/linked with ID: ${user.id}`);
     } else {
+      console.log(`[Auth] User found with ID: ${user.id}, updating info...`);
       // Update user info if it changed
       user = await prisma.user.update({
         where: { firebaseUid: uid },
@@ -33,6 +59,7 @@ export async function login(req, res) {
           picture: picture || user.picture,
         },
       });
+      console.log("[Auth] User info updated");
     }
 
     return res.status(200).json({
@@ -49,7 +76,7 @@ export async function login(req, res) {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Login error detail:", error);
     return res.status(500).json({
       success: false,
       message: "Login failed",

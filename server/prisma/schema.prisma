@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -20,15 +20,67 @@ model User {
   updatedAt    DateTime   @updatedAt @map("updated_at")
   
   documents    Document[]
+  projects     Project[]
 
   @@map("users")
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  title       String
+  description String?
+  status      String    @default("active") // active, completed, archived
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  columns     Column[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Column {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  title     String
+  order     Int      @default(0)
+  
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@index([projectId])
+  @@map("columns")
+}
+
+model Task {
+  id            Int       @id @default(autoincrement())
+  columnId      Int       @map("column_id")
+  title         String
+  description   String?
+  priority      String    @default("medium") // low, medium, high, critical
+  order         Int       @default(0)
+  dueDate       DateTime? @map("due_date")
+  startDate     DateTime? @map("start_date")
+  estimatedTime Int?      @map("estimated_time") // in minutes
+  actualTime    Int?      @map("actual_time")    // in minutes
+  tags          String    @default("[]")         // JSON array of strings
+  checklist     String    @default("[]")         // JSON array of {id, text, completed}
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  column        Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  @@index([columnId])
+  @@map("tasks")
 }
 
 model Document {
   id          Int      @id @default(autoincrement())
   userId      Int      @map("user_id")
   title       String   @default("Untitled Document")
-  content     String   // SQLite doesn't support @db.Text
+  contentRef  String   @map("content_ref") // Firebase Realtime Database reference path
   tags        String   @default("[]") // Store as JSON string
   status      String   @default("draft") // draft, archived
   isFavorite  Boolean  @default(false) @map("is_favorite")

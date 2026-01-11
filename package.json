@@ -1,0 +1,10 @@
+{
+  "name": "memmart",
+  "version": "1.0.0",
+  "description": "MemMart - A markdown editor with AI assistance",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ]
+}

@@ -5,6 +5,7 @@ import {
   getDocument,
   updateDocument,
   deleteDocument,
+  exportDocumentAsDocx,
 } from "../controllers/docController.js";
 import { authMiddleware } from "../middlewares/auth.js";
 
@@ -47,5 +48,12 @@ router.put("/:id", updateDocument);
  * @access  Private
  */
 router.delete("/:id", deleteDocument);
+
+/**
+ * @route   GET /api/v1/docs/:id/export/docx
+ * @desc    Export a document as DOCX
+ * @access  Private
+ */
+router.get("/:id/export/docx", exportDocumentAsDocx);
 
 export default router;

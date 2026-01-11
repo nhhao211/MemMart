@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "./authRoutes.js";
 import docRoutes from "./docRoutes.js";
 import aiRoutes from "./aiRoutes.js";
+import projectRoutes from "./projectRoutes.js";
 
 const router = express.Router();
 
@@ -9,6 +10,7 @@ const router = express.Router();
 router.use("/v1/auth", authRoutes);
 router.use("/v1/docs", docRoutes);
 router.use("/v1/ai", aiRoutes);
+router.use("/v1/projects", projectRoutes);
 
 // Health check
 router.get("/health", (req, res) => {
