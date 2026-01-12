@@ -6,7 +6,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
  * Middleware to verify Google ID token
  * Extracts user info and attaches to request object
  */
-export async function authMiddleware(req, res, next) {
+export async function googleAuthMiddleware(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
 
@@ -59,14 +59,14 @@ export async function authMiddleware(req, res, next) {
  * Middleware for error handling
  */
 export function errorMiddleware(err, req, res, next) {
-  console.error("Error:", err);
+  console.error('Error:', err);
 
   const status = err.status || 500;
-  const message = err.message || "Internal server error";
+  const message = err.message || 'Internal server error';
 
   res.status(status).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV === "development" && { error: err }),
+    ...(process.env.NODE_ENV === 'development' && { error: err }),
   });
 }
