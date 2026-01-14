@@ -68,6 +68,72 @@ Return only valid Markdown.`;
 }
 
 /**
+ * Generate Mermaid diagram code using Gemini
+ * @param {Object} params
+ * @param {string} params.prompt - User description of the diagram
+ * @param {string} params.type - Type of diagram (flowchart, sequence, etc.)
+ * @returns {Promise<string>} - Mermaid code
+ */
+export async function generateMermaidDiagram({ prompt, type = "flowchart" }) {
+  if (!apiKey) {
+    const error = new Error("GEMINI_API_KEY is not configured");
+    error.status = 500;
+    throw error;
+  }
+
+  if (!model) {
+    const error = new Error("Gemini client not initialized");
+    error.status = 500;
+    throw error;
+  }
+
+  const systemPrompt = `You are an expert in Mermaid.js. Your task is to generate a valid Mermaid diagram based on the user's description.
+- Return ONLY the Mermaid code block.
+- Do NOT include any explanations, markdown formatting outside the code block, or introductory text.
+- Ensure the syntax is valid for the specified diagram type: ${type}.
+- Use meaningful node labels.
+- If the request is unclear, generate a generic example of the requested type.`;
+
+  const userPrompt = `${systemPrompt}\n\nUser Request: ${prompt}`;
+
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: userPrompt }],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 2000,
+    },
+  });
+
+  const responseText = result?.response?.text()?.trim();
+
+  if (!responseText) {
+    const error = new Error("Failed to generate diagram");
+    error.status = 500;
+    throw error;
+  }
+
+  // Clean up the response to extract just the code
+  // Regex to match content between ```mermaid and ``` or just ``` and ```
+  const match = responseText.match(/```(?:mermaid)?([\s\S]*?)```/);
+  
+  if (match && match[1]) {
+      return match[1].trim();
+  }
+
+  // If no code blocks found, try to return the raw text if it looks like mermaid
+  if (responseText.includes("graph") || responseText.includes("sequenceDiagram") || responseText.includes("gantt")) {
+      return responseText.trim();
+  }
+  
+  return responseText;
+}
+
+/**
  * Convert Markdown content to DOCX format
  * Supports: headings, bold, italic, lists, code blocks, blockquotes
  */
