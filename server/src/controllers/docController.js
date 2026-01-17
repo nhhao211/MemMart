@@ -307,6 +307,84 @@ export async function deleteDocument(req, res) {
 }
 
 /**
+ * Delete multiple documents (Batch)
+ */
+export async function deleteDocuments(req, res) {
+  try {
+    const { ids } = req.body; // Array of IDs
+    const userId = req.user.uid;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No document IDs provided",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { firebaseUid: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Convert IDs to integers
+    const docIds = ids.map((id) => parseInt(id)).filter((id) => !isNaN(id));
+
+    if (docIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid document IDs",
+      });
+    }
+
+    // Verify ownership and get valid docs to delete
+    const documentsToDelete = await prisma.document.findMany({
+      where: {
+        id: { in: docIds },
+        userId: user.id,
+      },
+    });
+
+    if (documentsToDelete.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching documents found to delete",
+      });
+    }
+
+    // Delete content from Firebase for each doc
+    // We do this in parallel but catch errors so one failure doesn't stop others
+    await Promise.allSettled(
+      documentsToDelete.map((doc) => storageService.deleteContent(doc.id.toString()))
+    );
+
+    // Delete from PostgreSQL
+    const deletedCount = await prisma.document.deleteMany({
+      where: {
+        id: { in: documentsToDelete.map((d) => d.id) },
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${deletedCount.count} documents deleted`,
+    });
+  } catch (error) {
+    console.error("Batch delete documents error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete documents",
+      error: error.message,
+    });
+  }
+}
+
+/**
  * Export document as DOCX
  */
 export async function exportDocumentAsDocx(req, res) {

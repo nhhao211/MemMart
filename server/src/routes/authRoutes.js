@@ -1,5 +1,5 @@
 import express from "express";
-import { login, getProfile } from "../controllers/authController.js";
+import { login, getProfile, adminLogin } from "../controllers/authController.js";
 import { authMiddleware } from "../middlewares/auth.js";
 
 const router = express.Router();
@@ -10,6 +10,13 @@ const router = express.Router();
  * @access  Public (token in Authorization header)
  */
 router.post("/login", authMiddleware, login);
+
+/**
+ * @route   POST /api/v1/auth/admin-login
+ * @desc    Login as admin with username/password
+ * @access  Public
+ */
+router.post("/admin-login", adminLogin);
 
 /**
  * @route   GET /api/v1/auth/profile

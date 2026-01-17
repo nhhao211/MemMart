@@ -1,4 +1,5 @@
 import prisma from "../config/db.js";
+import jwt from 'jsonwebtoken';
 
 /**
  * Login / Sync user with database
@@ -81,6 +82,83 @@ export async function login(req, res) {
       success: false,
       message: "Login failed",
       error: error.message,
+    });
+  }
+}
+
+/**
+ * Admin Login with hardcoded credentials
+ */
+export async function adminLogin(req, res) {
+  try {
+    const { username, password } = req.body;
+
+    // Hardcoded check
+    if (username !== 'admin' || password !== 'memmart2026') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid admin credentials'
+      });
+    }
+
+    // Ensure admin user exists in DB to satisfy foreign keys etc.
+    const adminEmail = 'admin@memmart.local';
+    const adminUid = 'admin-local-uid';
+    
+    let user = await prisma.user.findUnique({
+      where: { firebaseUid: adminUid }
+    });
+
+    if (!user) {
+      // Try by email
+      user = await prisma.user.findUnique({ where: { email: adminEmail }});
+      
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            firebaseUid: adminUid,
+            email: adminEmail,
+            name: 'Administrator',
+            picture: null
+          }
+        });
+      }
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { 
+        uid: user.firebaseUid,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+        isAdmin: true
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin login successful',
+      data: {
+        token, // Client should store this
+        user: {
+          id: user.id,
+          firebaseUid: user.firebaseUid,
+          email: user.email,
+          name: user.name,
+          picture: user.picture
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Admin login error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Admin login failed",
+      error: error.message
     });
   }
 }
