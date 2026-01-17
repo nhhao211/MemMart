@@ -21,8 +21,25 @@ model User {
   
   documents    Document[]
   projects     Project[]
+  features     Feature[]
 
   @@map("users")
+}
+
+model Feature {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  title       String
+  description String?
+  status      String    @default("active") // active, completed, archived
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents   Document[]
+
+  @@index([userId])
+  @@map("features")
 }
 
 model Project {
@@ -88,6 +105,9 @@ model Document {
   updatedAt   DateTime @updatedAt @map("updated_at")
   
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  featureId   Int?     @map("feature_id")
+  feature     Feature? @relation(fields: [featureId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@map("documents")

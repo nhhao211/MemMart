@@ -32,6 +32,7 @@ export async function createDocument(req, res) {
         userId: user.id,
         status: "draft",
         isFavorite: false,
+        featureId: req.body.featureId ? parseInt(req.body.featureId) : undefined,
       },
     });
 
@@ -95,6 +96,7 @@ export async function listDocuments(req, res) {
         isFavorite: true,
         createdAt: true,
         updatedAt: true,
+        featureId: true,
         // Not fetching content for list view - saves bandwidth
       },
       orderBy: { updatedAt: "desc" },
@@ -222,7 +224,9 @@ export async function updateDocument(req, res) {
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (status !== undefined) updateData.status = status;
+    if (status !== undefined) updateData.status = status;
     if (isFavorite !== undefined) updateData.isFavorite = isFavorite;
+    if (req.body.featureId !== undefined) updateData.featureId = req.body.featureId ? parseInt(req.body.featureId) : null;
 
     const document = await prisma.document.update({
       where: { id: parseInt(id) },
